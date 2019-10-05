@@ -20,6 +20,7 @@ public class Asteroid : MonoBehaviour
 
     Rigidbody           rigid; // protected
     OffScreenWrapper    offScreenWrapper;
+    GameObject explosionPrefab;
 
 #if DEBUG_Asteroid_ShotOffscreenDebugLines
     [Header("ShotOffscreenDebugLines")]
@@ -36,6 +37,8 @@ public class Asteroid : MonoBehaviour
     void Start()
     {
         AsteraX.AddAsteroid(this);
+
+        explosionPrefab = AsteraX.AsteroidsSO.GetExplosionPrefab();
 
         transform.localScale = Vector3.one * size * AsteraX.AsteroidsSO.asteroidScale;
         if (parentIsAsteroid)
@@ -67,6 +70,10 @@ public class Asteroid : MonoBehaviour
 
     private void OnDestroy()
     {
+        // Instantiate explosion prefab.
+        GameObject go = Instantiate(explosionPrefab);
+        go.transform.position = transform.position;
+
         AsteraX.RemoveAsteroid(this);
     }
 

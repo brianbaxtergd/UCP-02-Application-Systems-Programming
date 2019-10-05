@@ -22,12 +22,17 @@ public class AsteroidsScriptableObject : ScriptableObject
     public int[]        pointsForAsteroidSize = {0, 400, 200, 100};
 
 	public GameObject[] asteroidPrefabs;
-
+    public GameObject[] explosionPrefabs;
 
     public GameObject GetAsteroidPrefab()
     {
         int ndx = Random.Range(0, asteroidPrefabs.Length);
         return asteroidPrefabs[ndx];
     }
-        
+
+    public GameObject GetExplosionPrefab()
+    {
+        int ndx = Random.Range(0, explosionPrefabs.Length);
+        return explosionPrefabs[ndx];
+    }
 }

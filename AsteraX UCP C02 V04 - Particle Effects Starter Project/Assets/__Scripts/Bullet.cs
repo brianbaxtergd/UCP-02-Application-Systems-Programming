@@ -19,6 +19,9 @@ public class Bullet : MonoBehaviour {
     public float    bulletSpeed = 20;
     public float    lifeTime = 2;
     public bool     bDidWrap = false;
+    public GameObject bulletParticlePrefab;
+
+    private GameObject partGO;
 
     void Start()
     {
@@ -29,11 +32,27 @@ public class Bullet : MonoBehaviour {
 
         // Set the velocity of the Bullet
         GetComponent<Rigidbody>().velocity = transform.forward * bulletSpeed;
+
+        // Instantiate the bullet's particle system prefab object.
+        partGO = Instantiate(bulletParticlePrefab);
+        partGO.transform.SetParent(transform);
+        partGO.transform.position = transform.position;
+    }
+
+    private void Update()
+    {
+        // Update partGO's position to match bullet.
+        //partGO.transform.position = transform.position;
     }
 
     void DestroyMe()
     {
         Destroy(gameObject);
     }
-    
+
+    private void OnDestroy()
+    {
+        // Destroy partGO.
+        Destroy(partGO);
+    }
 }

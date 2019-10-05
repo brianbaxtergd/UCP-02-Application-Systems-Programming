@@ -38,6 +38,8 @@ public class PlayerShip : MonoBehaviour
     public float        respawnDelay = 2;
     [Tooltip("The number of Jumps that the ship start the game with.")]
     public int          startingJumps = 3;
+    public GameObject ShipAppearPrefab;
+    public GameObject ShipDisappearPrefab;
 
     Rigidbody           rigid;
 
@@ -117,11 +119,15 @@ public class PlayerShip : MonoBehaviour
 #if DEBUG_PlayerShip_RespawnNotifications
         Debug.Log("PlayerShip:Respawn()");
 #endif
-        StartCoroutine(AsteraX.FindRespawnPointCoroutine(transform.position, RespawnCallback)); 
+        StartCoroutine(AsteraX.FindRespawnPointCoroutine(transform.position, RespawnCallback));
 
         // Initially, I had made the gameObject inactive, but this caused the 
         //  coroutine called above to never return from yield!
         //gameObject.SetActive(false);
+
+        // Instantiate disappear particle prefab.
+        GameObject go = Instantiate(ShipDisappearPrefab);
+        go.transform.position = transform.position;
 
         // Now, instead, I turn off the OffScreenWrapper and move the GameObject 
         // outside the play area until  RespawnCallback is called.
@@ -137,6 +143,10 @@ public class PlayerShip : MonoBehaviour
         Debug.Log("PlayerShip:RespawnCallback( "+newPos+" )");
 #endif
         transform.position = newPos;
+
+        // Instantiate appear particle prefab.
+        GameObject go = Instantiate(ShipAppearPrefab);
+        go.transform.position = transform.position;
 
         OffScreenWrapper wrapper = GetComponent<OffScreenWrapper>();
         if (wrapper != null) {
