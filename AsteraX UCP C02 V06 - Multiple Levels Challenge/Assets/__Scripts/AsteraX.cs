@@ -12,6 +12,7 @@ public class AsteraX : MonoBehaviour
 
     static List<Asteroid>           ASTEROIDS;
     static List<Bullet>             BULLETS;
+    static List<LevelInfo>          LEVEL_LIST;
     static private eGameState       _GAME_STATE = eGameState.mainMenu;
     
 	// If you use a fully-qualified class name like this, you don't need "using UnityEngine.UI;" above.
@@ -24,6 +25,7 @@ public class AsteraX : MonoBehaviour
 
 	public delegate void CallbackDelegate(); // Set up a generic delegate type.
     static public CallbackDelegate GAME_STATE_CHANGE_DELEGATE;
+    static public event CallbackDelegate PAUSED_CHANGE_DELEGATE;
     
 	public delegate void CallbackDelegateV3(Vector3 v); // Set up a Vector3 delegate type.
 
@@ -60,6 +62,10 @@ public class AsteraX : MonoBehaviour
     [Tooltip("This private field shows the game state in the Inspector and is set by the "
         + "GAME_STATE_CHANGE_DELEGATE whenever GAME_STATE changes.")]
     protected eGameState  _gameState;
+    [SerializeField]
+    bool _paused = false;
+
+    static bool _PAUSED = false;
 
     private void Awake()
     {
@@ -68,17 +74,19 @@ public class AsteraX : MonoBehaviour
 #endif
 
         S = this;
-        
-		GAME_STATE_CHANGE_DELEGATE += delegate ()
-        {
-            // This is an example of a C# anonymous delegate. It's used to set the state of
-            //  _gameState every time GAME_STATE changes.
-            // Anonymous delegates like this do create "closures" like "this" below, which 
-            //  stores the value of this when the anonymous delegate was created. Closures
-            //  can be slow, but in this case, it is so rarely used that it doesn't matter.
-            this._gameState = AsteraX.GAME_STATE;
-            S._gameState = AsteraX.GAME_STATE;
-        };
+
+        GAME_STATE_CHANGE_DELEGATE += GameStateChanged;
+        PAUSED_CHANGE_DELEGATE += PauseChanged;
+		//GAME_STATE_CHANGE_DELEGATE += delegate ()
+        //{
+        //    // This is an example of a C# anonymous delegate. It's used to set the state of
+        //    //  _gameState every time GAME_STATE changes.
+        //    // Anonymous delegates like this do create "closures" like "this" below, which 
+        //    //  stores the value of this when the anonymous delegate was created. Closures
+        //    //  can be slow, but in this case, it is so rarely used that it doesn't matter.
+        //    this._gameState = AsteraX.GAME_STATE;
+        //    S._gameState = AsteraX.GAME_STATE;
+        //};
         
 		// This strange use of _gameState as an intermediary in the following lines 
         //  is solely to stop the Warning from popping up in the Console telling you 
@@ -89,6 +97,8 @@ public class AsteraX : MonoBehaviour
 
     private void OnDestroy()
     {
+        GAME_STATE_CHANGE_DELEGATE -= GameStateChanged;
+        PAUSED_CHANGE_DELEGATE -= PauseChanged;
         AsteraX.GAME_STATE = AsteraX.eGameState.none;
     }
 
@@ -98,17 +108,46 @@ public class AsteraX : MonoBehaviour
         Debug.Log("AsteraX:Start()");
 #endif
 
+        ParseLevelProgression();
+
         ASTEROIDS = new List<Asteroid>();
 		AddScore(0);
-        
-        // Spawn the parent Asteroids, child Asteroids are taken care of by them
-        for (int i = 0; i < 3; i++)
-        {
-            SpawnParentAsteroid(i);
-        }
-        GAME_STATE = eGameState.level;
     }
 
+    private void Update()
+    {
+        if (GAME_STATE == eGameState.level && ASTEROIDS.Count == 0)
+        {
+            // The player has destroyed all Asteroids and completed this level.
+            if (_S != null)
+                _S.EndLevel();
+        }
+    }
+
+    void ParseLevelProgression()
+    {
+        // This takes the info. from levelProgression and puts it into LEVEL_LIST.
+        LEVEL_LIST = new List<LevelInfo>();
+
+        string[] levelStrings = levelProgression.Split(',');
+        for (int i = 0; i < levelStrings.Length; i++)
+        {
+            string[] levelBits = levelStrings[i].Split(':');
+            string levelName = "Level " + levelBits[0];
+            string[] asteroidStrings = levelBits[1].Split('/');
+            int numInitialAsteroids, numSubAsteroids;
+            if (!int.TryParse(asteroidStrings[0], out numInitialAsteroids)
+                || !int.TryParse(asteroidStrings[1], out numSubAsteroids))
+            {
+                Debug.LogError("AsteraX:ParseLevelProgression() - Attempt to parse bad asteroid numbers" + "for " + levelName + ": " + levelStrings[i]);
+                return;
+            }
+            // We should have good data now.
+            LevelInfo levelInfo = new LevelInfo(i + 1, levelName, numInitialAsteroids, numSubAsteroids);
+            LEVEL_LIST.Add(levelInfo);
+        }
+        Debug.Log("AsteraX:ParseLevelProgression() - Parsed levelProgression:\n" + levelProgression);
+    }
 
     void SpawnParentAsteroid(int i)
     {
@@ -129,8 +168,34 @@ public class AsteraX : MonoBehaviour
         ast.size = asteroidsSO.initialSize;
     }
 
+    public void PauseGameToggle()
+    {
+        PauseGame(!PAUSED);
+    }
 
+    public void PauseGame(bool toPaused)
+    {
+        PAUSED = toPaused;
+        if (PAUSED)
+        {
+            Time.timeScale = 0;
+        }
+        else
+        {
+            Time.timeScale = 1;
+        }
+    }
     
+    void PauseChanged()
+    {
+        this._paused = AsteraX.PAUSED;
+    }
+
+    void GameStateChanged()
+    {
+        this._gameState = AsteraX.GAME_STATE;
+    }
+
 	public void EndGame()
     {
         GAME_STATE = eGameState.gameOver;
@@ -228,13 +293,30 @@ public class AsteraX : MonoBehaviour
     }
     static public void RemoveAsteroid(Asteroid asteroid)
     {
+        if (GAME_STATE != eGameState.level)
+            return;
+
         if (ASTEROIDS.IndexOf(asteroid) != -1)
         {
             ASTEROIDS.Remove(asteroid);
         }
     }
 
-    
+    static public void AddBullet(Bullet bullet)
+    {
+        if (BULLETS == null)
+            BULLETS = new List<Bullet>();
+        if (BULLETS.IndexOf(bullet) == -1)
+            BULLETS.Add(bullet);
+    }
+
+    static public void RemoveBullet(Bullet bullet)
+    {
+        if (BULLETS == null)
+            return;
+        BULLETS.Remove(bullet);
+    }
+
     static public void GameOver()
     {
         _S.EndGame();
@@ -387,4 +469,143 @@ public class AsteraX : MonoBehaviour
         callback(nextPos);
     }
 
+    static public bool PAUSED
+    {
+        get
+        {
+            return _PAUSED;
+        }
+        private set
+        {
+            if (value != _PAUSED)
+            {
+                _PAUSED = value;
+                if (PAUSED_CHANGE_DELEGATE != null)
+                    PAUSED_CHANGE_DELEGATE();
+            }
+        }
+    }
+
+    [System.Serializable]
+    public struct LevelInfo
+    {
+        public int levelNum;
+        public string levelName;
+        public int numInitialAsteroids;
+        public int numSubAsteroids;
+
+        public LevelInfo(int lNum, string name, int initial, int sub)
+        {
+            levelNum = lNum;
+            levelName = name;
+            numInitialAsteroids = initial;
+            numSubAsteroids = sub;
+        }
+    }
+
+    static public LevelInfo GetLevelInfo(int lNum = -1)
+    {
+        if (lNum == -1)
+        {
+            lNum = GAME_LEVEL;
+        }
+        // lNum is 1-based where LEVEL_LIST is 0-based, so LEVEL_LIST[0] is lNum 1.
+        if (lNum < 1 || lNum > LEVEL_LIST.Count)
+        {
+            Debug.LogError("AsteraX:GetLevelInfo() - Requested level number of " + lNum + " does not exist.");
+            return new LevelInfo(-1, "NULL", 1, 1);
+        }
+        return (LEVEL_LIST[lNum - 1]);
+    }
+
+    static public int GAME_LEVEL
+    {
+        get; private set;
+    }
+
+    static public void StartGame()
+    {
+        GAME_LEVEL = 0;
+        _S.EndLevel();
+    }
+
+    void EndLevel()
+    {
+        if (GAME_STATE != eGameState.none)
+        {
+            PauseGame(true);
+            GAME_LEVEL++;
+            GAME_STATE = eGameState.postLevel;
+            LevelAdvancePanel.AdvanceLevel(LevelAdvanceDisplayCallback, LevelAdvanceIdleCallback);
+        }
+    }
+
+    void LevelAdvanceDisplayCallback()
+    {
+        StartLevel(GAME_LEVEL);
+    }
+
+    void LevelAdvanceIdleCallback()
+    {
+        GAME_STATE = eGameState.level;
+
+        PauseGame(false);
+    }
+
+    void StartLevel(int levelNum)
+    {
+        if (LEVEL_LIST.Count == 0)
+        {
+            Debug.LogError("AsteraX:StartLevel(" + levelNum + ") - LEVEL_LIST is empty!");
+            return;
+        }
+        if (levelNum >= LEVEL_LIST.Count)
+        {
+            levelNum = 1; // Just loop the levels for now. In a real game, this would be different.
+        }
+
+        GAME_STATE = eGameState.preLevel;
+        GAME_LEVEL = levelNum;
+        LevelInfo info = LEVEL_LIST[levelNum - 1];
+
+        // Destroy all remaining Asteroids, Bullets, etc. (including particle effects).
+        ClearAsteroids();
+        ClearBullets();
+        foreach (GameObject go in GameObject.FindGameObjectsWithTag("DestroyWithLevelChange"))
+        {
+            Destroy(go);
+        }
+
+        // Set up the asteroidsSO.
+        asteroidsSO.numSmallerAsteroidsToSpawn = info.numSubAsteroids;
+
+        // Spawn the parent Asteroids, child Asteroids are taken care of by them.
+        for (int i = 0; i < info.numInitialAsteroids; i++)
+        {
+            SpawnParentAsteroid(i);
+        }
+    }
+
+    void ClearAsteroids()
+    {
+        Asteroid ast;
+        for (int i = ASTEROIDS.Count - 1; i >= 0; i--)
+        {
+            ast = ASTEROIDS[i];
+            ast.transform.SetParent(null);
+            Destroy(ast.gameObject);
+        }
+        ASTEROIDS.Clear();
+    }
+
+    void ClearBullets()
+    {
+        if (BULLETS == null)
+            return;
+        // Because Bullet.OnDestroy() will in turn call AsteraX.RemoveBullet(), we need to work backwards through BULLETS.
+        for (int i = BULLETS.Count - 1; i >= 0; i--)
+        {
+            Destroy(BULLETS[i].gameObject);
+        }
+    }
 }

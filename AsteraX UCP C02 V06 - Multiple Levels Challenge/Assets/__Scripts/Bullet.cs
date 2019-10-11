@@ -28,6 +28,8 @@ public class Bullet : MonoBehaviour {
     {
         transform.SetParent(BULLET_ANCHOR, true);
 
+        AsteraX.AddBullet(this);
+
         // Set Bullet to self-destruct in lifeTime seconds
         Invoke("DestroyMe", lifeTime);
 
@@ -44,5 +46,9 @@ public class Bullet : MonoBehaviour {
     {
         Destroy(gameObject);
     }
-    
+
+    private void OnDestroy()
+    {
+        AsteraX.RemoveBullet(this);
+    }
 }

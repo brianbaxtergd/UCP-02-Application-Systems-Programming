@@ -4,24 +4,34 @@ using UnityEngine;
 
 public class ActiveOnlyDuringSomeGameStates : MonoBehaviour {
 
+    public enum ePauseEffect
+    {
+        ignorePause,
+        activeWhenPaused,
+        activeWhenNotPaused
+    }
+
     // eGameStates is a System.Flags enum, so many values can be stored in a single field.
     [EnumFlags] // This uses the EnumFlagsAttribute from EnumFlagsAttributePropertyDrawer
     public AsteraX.eGameState   activeStates = AsteraX.eGameState.all;
+    public ePauseEffect pauseEffect = ePauseEffect.ignorePause;
 
 	// Use this for initialization
-	public virtual void Awake () {
-        // Register this callback with the static public delegates on AsteraX.
-        AsteraX.GAME_STATE_CHANGE_DELEGATE += DetermineActive;
-
+	public virtual void Awake()
+    {
         // Also make sure to set self based on the current state when awakened
         DetermineActive();
+
+        // Register this callback with the static public delegates on AsteraX.
+        AsteraX.GAME_STATE_CHANGE_DELEGATE += DetermineActive;
+        AsteraX.PAUSED_CHANGE_DELEGATE += DetermineActive;
 	}
 
     protected void OnDestroy()
     {
         // Unregister this callback from the static public delegates on AsteraX.
         AsteraX.GAME_STATE_CHANGE_DELEGATE -= DetermineActive;
-
+        AsteraX.PAUSED_CHANGE_DELEGATE -= DetermineActive;
     }
 
 
@@ -32,7 +42,19 @@ public class ActiveOnlyDuringSomeGameStates : MonoBehaviour {
         //  true in activeStates, meaning that newState is one of the states where this
         //  GameObject should be active.
         bool shouldBeActive = (activeStates & AsteraX.GAME_STATE) == AsteraX.GAME_STATE;
-
+        if (shouldBeActive)
+        {
+            // This only comes into play if shouldBeActive is true at this point.
+            switch (pauseEffect)
+            {
+                case ePauseEffect.activeWhenNotPaused:
+                    shouldBeActive = !AsteraX.PAUSED;
+                    break;
+                case ePauseEffect.activeWhenPaused:
+                    shouldBeActive = AsteraX.PAUSED;
+                    break;
+            }
+        }
         gameObject.SetActive(shouldBeActive);
     }
     
