@@ -10,4 +10,9 @@ public class TitleScreenPanel : MonoBehaviour {
         AsteraX.StartGame();
     }
 
+    // Allows the Button child of this GameObject to call a static method.
+    public void DeleteSaveFile()
+    {
+        SaveGameManager.DeleteSave();
+    }
 }

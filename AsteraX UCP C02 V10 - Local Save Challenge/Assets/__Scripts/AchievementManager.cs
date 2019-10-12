@@ -104,6 +104,9 @@ public class AchievementManager : MonoBehaviour
                     {
                         // The result is true if the Achievement was completed
                         AnnounceAchievementCompletion(ach);
+
+                        // Also save the game any time we complete an Achievement.
+                        SaveGameManager.Save();
                     }
                 }
             }
@@ -134,7 +137,43 @@ public class AchievementManager : MonoBehaviour
         return S.achievements;
     }
 
+    static public void ClearStepsAndAchievements()
+    {
+        // Clear the StepRecord progress.
+        foreach (StepRecord sRec in S.stepRecords)
+        {
+            sRec.num = 0;
+        }
 
+        // Clear Achievement completion.
+        foreach (Achievement ach in S.achievements)
+        {
+            ach.complete = false;
+        }
+    }
+
+    // Note: The Awake() on this script must run before the SaveGameManager.Awake().
+    static internal void LoadDataFromSaveFile(SaveFile saveFile)
+    {
+        // Handle StepRecords.
+        foreach (StepRecord sRec in saveFile.stepRecords)
+        {
+            if (STEP_REC_DICT.ContainsKey(sRec.type))
+            {
+                STEP_REC_DICT[sRec.type].num = sRec.num;
+            }
+        }
+
+        // Handle Achievements.
+        foreach (Achievement achSF in saveFile.achievements)
+        {
+            foreach (Achievement achAM in S.achievements)
+            {
+                if (achSF.name == achAM.name)
+                    achAM.complete = achSF.complete;
+            }
+        }
+    }
 }
 
 

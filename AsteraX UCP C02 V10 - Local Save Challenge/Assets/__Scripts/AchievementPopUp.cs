@@ -131,6 +131,12 @@ public class AchievementPopUp : MonoBehaviour
             _S = value;
         }
     }
+
+    static public void ShowPopUp(string achievementName, string achievementDescription = "")
+    {
+        StringTuple st = new StringTuple(achievementName, achievementDescription);
+        S.PopUp(st);
+    }
 }
 
 

@@ -15,6 +15,7 @@ public class AsteraX : MonoBehaviour
     static List<Bullet>             BULLETS;
     static private bool             _PAUSED = false;
     static private eGameState       _GAME_STATE = eGameState.mainMenu;
+    static private bool             GOT_HIGH_SCORE = false;
     
 	// If you use a fully-qualified class name like this, you don't need "using UnityEngine.UI;" above.
     static UnityEngine.UI.Text  	SCORE_GT;
@@ -134,6 +135,8 @@ public class AsteraX : MonoBehaviour
 
         ASTEROIDS = new List<Asteroid>();
 		AddScore(0);
+
+        SaveGameManager.Load();
     }
 
 
@@ -504,6 +507,8 @@ public class AsteraX : MonoBehaviour
 
     static public void GameOver()
     {
+        SaveGameManager.CheckHighScore(SCORE);
+        SaveGameManager.Save();
         _S.EndGame();
     }
 
@@ -561,6 +566,12 @@ public class AsteraX : MonoBehaviour
         }
         // SCORE holds the definitive score for the game.
         SCORE += num;
+
+        if (!GOT_HIGH_SCORE && SaveGameManager.CheckHighScore(SCORE))
+        {
+            GOT_HIGH_SCORE = true;
+            AchievementPopUp.ShowPopUp("High Score!", "You've achieved a new high score.");
+        }
 
         // Show the score on screen. For info on numeric formatting like "N0", see:
         //  https://docs.microsoft.com/en-us/dotnet/standard/base-types/standard-numeric-format-strings
