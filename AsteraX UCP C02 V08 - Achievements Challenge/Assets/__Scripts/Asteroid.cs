@@ -194,6 +194,15 @@ public class Asteroid : MonoBehaviour
             {
                 Destroy(otherGO);
                 AsteraX.AddScore(AsteraX.AsteroidsSO.pointsForAsteroidSize[size]);
+
+                AchievementManager.AchievementStep(Achievement.eStepType.hitAsteroid, 1);
+
+                Bullet bul = otherGO.GetComponent<Bullet>();
+                if(bul != null)
+                {
+                    if (bul.bDidWrap)
+                        AchievementManager.AchievementStep(Achievement.eStepType.luckyShot);
+                }
             }
 
             if (size > 1)

@@ -173,6 +173,7 @@ public class AsteraX : MonoBehaviour
             SpawnParentAsteroid(i);
         }
 
+        AchievementManager.AchievementStep(Achievement.eStepType.levelUp, levelNum);
     }
 
     void EndLevel()
@@ -379,6 +380,7 @@ public class AsteraX : MonoBehaviour
         if (BULLETS.IndexOf(bullet) == -1)
         {
             BULLETS.Add(bullet);
+            AchievementManager.AchievementStep(Achievement.eStepType.bulletFired, 1);
         }
     }
 
@@ -537,6 +539,10 @@ public class AsteraX : MonoBehaviour
         return (LEVEL_LIST[lNum - 1]);
     }
     
+    static public void BulletWrapShot()
+    {
+        AchievementManager.AchievementStep(Achievement.eStepType.luckyShot, 1);
+    }
     
 	static public void AddScore(int num)
     {
@@ -561,6 +567,8 @@ public class AsteraX : MonoBehaviour
         // Show the score on screen. For info on numeric formatting like "N0", see:
         //  https://docs.microsoft.com/en-us/dotnet/standard/base-types/standard-numeric-format-strings
         SCORE_GT.text = SCORE.ToString("N0");
+
+        AchievementManager.AchievementStep(Achievement.eStepType.scoreAttained, SCORE);
     }
 
 
