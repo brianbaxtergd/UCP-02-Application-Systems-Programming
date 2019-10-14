@@ -42,6 +42,9 @@ static public class SaveGameManager
         saveFile.stepRecords = AchievementManager.GetStepRecords();
         saveFile.achievements = AchievementManager.GetAchievements();
 
+        saveFile.selectedBody = ShipCustomizationPanel.GetSelectedPart(ShipPart.eShipPartType.body);
+        saveFile.selectedTurret = ShipCustomizationPanel.GetSelectedPart(ShipPart.eShipPartType.turret);
+
         string jsonSaveFile = JsonUtility.ToJson(saveFile, true);
 
         File.WriteAllText(filePath, jsonSaveFile);
@@ -80,6 +83,10 @@ static public class SaveGameManager
             LOCK = true;
             // Load the Achievements
             AchievementManager.LoadDataFromSaveFile(saveFile);
+
+            // Load the selected ShipParts.
+            ShipCustomizationPanel.SelectPart(ShipPart.eShipPartType.body, saveFile.selectedBody);
+            ShipCustomizationPanel.SelectPart(ShipPart.eShipPartType.turret, saveFile.selectedTurret);
 
             LOCK = false;
         }
